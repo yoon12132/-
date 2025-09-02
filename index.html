@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>자리 배정</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    #board {
+      display: grid;
+      gap: 5px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .cell {
+      width: 50px;
+      height: 50px;
+      border: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f5f5;
+      font-size: 16px;
+      border-radius: 6px;
+    }
+    .disabled {
+      background: #bbb;
+    }
+    .blackboard {
+      width: 200px;
+      height: 50px;
+      background: green;
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px auto;
+      border-radius: 8px;
+    }
+    input {
+      width: 60px;
+      padding: 5px;
+      margin: 0 5px;
+    }
+    button {
+      margin: 5px;
+      padding: 8px 16px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .create-btn {
+      background-color: #3498db;
+      color: white;
+    }
+    .random-btn {
+      background-color: #2ecc71;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h2>자리 배정 보드</h2>
+
+  <div>
+    <label>행: <input type="number" id="rows" value="4" min="1"></label>
+    <label>열: <input type="number" id="cols" value="4" min="1"></label>
+  </div>
+
+  <div style="margin-top: 8px;">
+    <label>사용하지 않는 좌석: <input type="number" id="disabledSeats" value="0" min="0"></label>
+    <button class="create-btn" onclick="generateBoard()">보드 생성</button>
+  </div>
+
+  <!-- 칠판 -->
+  <div class="blackboard">칠판</div>
+
+  <div id="board"></div>
+
+  <button class="random-btn" onclick="randomizeBoard()" style="display:none;" id="randomBtn">
+    랜덤 돌리기
+  </button>
+  
+  <div id="counterBox" style="display:none; margin-top:10px; font-size:16px; font-weight:bold; color:#333;">
+    돌린 횟수: 0
+  </div>
+
+  <script>
+    let rows = 0;
+    let cols = 0;
+    let disabledSeats = 0;
+    let count = 0; // 랜덤 돌리기 횟수
+
+    // 보드 생성
+    function generateBoard() {
+      rows = parseInt(document.getElementById("rows").value);
+      cols = parseInt(document.getElementById("cols").value);
+      disabledSeats = parseInt(document.getElementById("disabledSeats").value);
+
+      const board = document.getElementById("board");
+      board.innerHTML = ""; // 초기화
+      board.style.gridTemplateColumns = `repeat(${cols}, 50px)`;
+
+      const totalSeats = rows * cols;
+
+      for (let i = 0; i < totalSeats; i++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        board.appendChild(cell);
+      }
+
+      // 사용하지 않는 좌석 표시 (오른쪽 아래부터)
+      const cells = document.querySelectorAll(".cell");
+      for (let i = 0; i < disabledSeats; i++) {
+        const index = totalSeats - 1 - i; // 마지막 칸부터 거꾸로
+        cells[index].classList.add("disabled");
+      }
+
+      // 버튼과 카운터 보이기 + 카운트 리셋
+      document.getElementById("randomBtn").style.display = "inline-block";
+      count = 0;
+      document.getElementById("counterBox").style.display = "block";
+      document.getElementById("counterBox").textContent = "돌린 횟수: 0";
+
+    }
+
+    // 배열 섞기 (Fisher-Yates shuffle)
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    // 랜덤 숫자 (중복 없이, 비활성 좌석 제외)
+    function randomizeBoard() {
+      const cells = document.querySelectorAll(".cell");
+      const activeSeats = rows * cols - disabledSeats;
+
+      // 1~activeSeats 배열 만들기
+      let numbers = Array.from({ length: activeSeats }, (_, i) => i + 1);
+      numbers = numbers.filter(n => n !== 22); // 22는 따로 처리
+      numbers = shuffle(numbers);
+
+      let numIndex = 0;
+
+      // 22번이 들어갈 행 결정
+      const totalSeats = rows * cols;
+      let targetRow;
+      if (disabledSeats === 0) {
+        targetRow = rows - 1; // 맨 마지막 줄
+      } else {
+        targetRow = rows - 2; // 마지막 줄 바로 위 줄
+      }
+
+      // targetRow의 열 중 무작위 한 칸 선택
+      const randomCol = Math.floor(Math.random() * cols);
+      const targetIndex = targetRow * cols + randomCol;
+
+      cells.forEach((cell, index) => {
+        if (cell.classList.contains("disabled")) {
+          cell.textContent = "";
+        } else if (index === targetIndex) {
+          cell.textContent = 22; // 22 고정
+        } else {
+          cell.textContent = numbers[numIndex];
+          numIndex++;
+        }
+      });
+
+       // 돌린 횟수 업데이트
+      count++;
+      document.getElementById("counterBox").textContent = "돌린 횟수: " + count;
+
+    }
+  </script>
+</body>
+</html>
