@@ -2,8 +2,27 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>자리 배정</title>
   <style>
+
+    /* 기본 스타일 (PC 기준) */
+    body {
+      font-size: 16px;
+        }
+
+    /* 휴대폰 화면에서만 적용 */
+    @media (max-width: 768px) {
+      body {
+        font-size: 20px;   /* 모바일에서 글자 크게 */
+      }
+
+      button, input {
+        font-size: 18px;   /* 버튼/입력칸도 크게 */
+        padding: 12px;     /* 터치하기 편하게 */
+      }
+    }
+
     body {
       font-family: Arial, sans-serif;
       text-align: center;
