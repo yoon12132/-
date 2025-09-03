@@ -5,29 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>자리 배정</title>
   <style>
-
-    /* 기본 스타일 (PC 기준) */
     body {
       font-size: 16px;
-        }
-
-    /* 휴대폰 화면에서만 적용 */
-    @media (max-width: 768px) {
-      body {
-        font-size: 20px;   /* 모바일에서 글자 크게 */
-      }
-
-      button, input {
-        font-size: 18px;   /* 버튼/입력칸도 크게 */
-        padding: 12px;     /* 터치하기 편하게 */
-      }
-    }
-
-    body {
       font-family: Arial, sans-serif;
       text-align: center;
       margin: 20px;
     }
+
+    /* 휴대폰 화면에서만 적용 */
+    @media (max-width: 768px) {
+      body {
+        font-size: 20px;
+      }
+      button, input {
+        font-size: 18px;
+        padding: 12px;
+      }
+    }
+
     #board {
       display: grid;
       gap: 5px;
@@ -123,7 +118,7 @@
       disabledSeats = parseInt(document.getElementById("disabledSeats").value);
 
       const board = document.getElementById("board");
-      board.innerHTML = ""; // 초기화
+      board.innerHTML = "";
       board.style.gridTemplateColumns = `repeat(${cols}, 50px)`;
 
       const totalSeats = rows * cols;
@@ -134,22 +129,20 @@
         board.appendChild(cell);
       }
 
-      // 사용하지 않는 좌석 표시 (오른쪽 아래부터)
+      // 사용하지 않는 좌석 표시
       const cells = document.querySelectorAll(".cell");
       for (let i = 0; i < disabledSeats; i++) {
-        const index = totalSeats - 1 - i; // 마지막 칸부터 거꾸로
+        const index = totalSeats - 1 - i;
         cells[index].classList.add("disabled");
       }
 
-      // 버튼과 카운터 보이기 + 카운트 리셋
       document.getElementById("randomBtn").style.display = "inline-block";
       count = 0;
       document.getElementById("counterBox").style.display = "block";
       document.getElementById("counterBox").textContent = "돌린 횟수: 0";
-
     }
 
-    // 배열 섞기 (Fisher-Yates shuffle)
+    // 배열 섞기
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -162,43 +155,89 @@
     function randomizeBoard() {
       const cells = document.querySelectorAll(".cell");
       const activeSeats = rows * cols - disabledSeats;
+      const totalSeats = rows * cols;
 
       // 1~activeSeats 배열 만들기
       let numbers = Array.from({ length: activeSeats }, (_, i) => i + 1);
-      numbers = numbers.filter(n => n !== 22); // 22는 따로 처리
       numbers = shuffle(numbers);
 
-      let numIndex = 0;
-
-      // 22번이 들어갈 행 결정
-      const totalSeats = rows * cols;
-      let targetRow;
-      if (disabledSeats === 0) {
-        targetRow = rows - 1; // 맨 마지막 줄
+      // --------------------------
+      // 1) 세번마다 전체 랜덤
+      // --------------------------
+      if (count % 3 === 2) {
+        let idx = 0;
+        cells.forEach((cell) => {
+          if (cell.classList.contains("disabled")) {
+            cell.textContent = "";
+          } else {
+            cell.textContent = numbers[idx];
+            idx++;
+          }
+        });
       } else {
-        targetRow = rows - 2; // 마지막 줄 바로 위 줄
+        // --------------------------
+        // 2) 22번 고정 + 3번 특별 배치
+        // --------------------------
+        // numbers 배열에서 22, 3 제외
+        numbers = numbers.filter(n => n !== 22 && n !== 3);
+
+        // 22번 위치
+        let targetRow;
+        if (disabledSeats === 0) {
+          targetRow = rows - 1; // 맨 마지막 줄
+        } else {
+          targetRow = rows - 2; // 마지막 줄 바로 위 줄
+        }
+        const randomCol = Math.floor(Math.random() * cols);
+        const targetIndex = targetRow * cols + randomCol;
+
+        // 22번 주변 후보 좌표
+        const candidateOffsets = [
+          {r: 0, c: -1}, {r: 0, c: -2}, // 왼쪽 2칸
+          {r: 0, c: 1}, {r: 0, c: 2},   // 오른쪽 2칸
+          {r: -1, c: 0}, {r: -2, c: 0}, // 위쪽 2칸
+          {r: -1, c: -1}, {r: -1, c: 1} // 대각선 2곳
+        ];
+
+        const targetRowPos = Math.floor(targetIndex / cols);
+        const targetColPos = targetIndex % cols;
+  
+        // 후보 중 보드 안에 있는 위치만 필터링
+        const validCandidates = candidateOffsets
+          .map(off => ({
+            r: targetRowPos + off.r,
+            c: targetColPos + off.c
+          }))
+          .filter(pos =>
+            pos.r >= 0 && pos.r < rows &&
+            pos.c >= 0 && pos.c < cols
+          )
+          .map(pos => pos.r * cols + pos.c);
+
+        // 랜덤으로 하나 선택
+        const threeIndex = validCandidates[Math.floor(Math.random() * validCandidates.length)];
+  
+        // 보드 채우기
+        let numIndex = 0;
+        cells.forEach((cell, index) => {
+          if (cell.classList.contains("disabled")) {
+            cell.textContent = "";
+          } else if (index === targetIndex) {
+            cell.textContent = 22; // 22번
+          } else if (index === threeIndex) {
+            cell.textContent = 3;  // 3번
+          } else {
+            cell.textContent = numbers[numIndex];
+            numIndex++;
+          }
+        });
       }
 
-      // targetRow의 열 중 무작위 한 칸 선택
-      const randomCol = Math.floor(Math.random() * cols);
-      const targetIndex = targetRow * cols + randomCol;
-
-      cells.forEach((cell, index) => {
-        if (cell.classList.contains("disabled")) {
-          cell.textContent = "";
-        } else if (index === targetIndex) {
-          cell.textContent = 22; // 22 고정
-        } else {
-          cell.textContent = numbers[numIndex];
-          numIndex++;
-        }
-      });
-
-       // 돌린 횟수 업데이트
+      // 돌린 횟수 업데이트
       count++;
       document.getElementById("counterBox").textContent = "돌린 횟수: " + count;
-
     }
+
   </script>
 </body>
 </html>
